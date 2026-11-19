@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>02159 Exam Trainer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: sticky header with countdown + tabs; practice = filter rail + question card; other tabs single column. */
+:root {
+  --bg: #f2f4f8; --surface: #ffffff; --surface-2: #e9edf4; --fg: #131925; --muted: #5a6476; --line: #d6dce7;
+  --accent: #2443c4; --accent-ink: #ffffff; --accent-soft: #e2e8ff;
+  --good: #17734a; --good-soft: #dcf2e6; --warn: #8f5b00; --warn-soft: #f9ecd2; --bad: #b0222c; --bad-soft: #fae1e3;
+  --code-bg: #111827; --code-fg: #dfe5f1; --code-kw: #93b4ff; --code-str: #f0c27f; --code-com: #7d889e; --code-num: #c9a6ff; --code-pp: #7fd5c1;
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1119; --surface: #151b26; --surface-2: #1c2331; --fg: #e5e9f1; --muted: #98a1b3; --line: #29313f;
+  --accent: #8aa3ff; --accent-ink: #0a0f1f; --accent-soft: #1d2748;
+  --good: #63cc94; --good-soft: #14301f; --warn: #e6b65c; --warn-soft: #33270e; --bad: #ff7d84; --bad-soft: #3a1a1e;
+  --code-bg: #0a0e16; color-scheme: dark;
+}}
+:root[data-theme="dark"] {
+  --bg: #0d1119; --surface: #151b26; --surface-2: #1c2331; --fg: #e5e9f1; --muted: #98a1b3; --line: #29313f;
+  --accent: #8aa3ff; --accent-ink: #0a0f1f; --accent-soft: #1d2748;
+  --good: #63cc94; --good-soft: #14301f; --warn: #e6b65c; --warn-soft: #33270e; --bad: #ff7d84; --bad-soft: #3a1a1e;
+  --code-bg: #0a0e16; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, textarea, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--f-mono); font-size: 0.88em; background: var(--surface-2); padding: 0.05em 0.35em; border-radius: 4px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Header */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top-row { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; padding-block: 12px 8px; }
+.brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.brand h1 { font-size: 1.25rem; letter-spacing: -0.01em; }
+.brand .prompt { font-family: var(--f-mono); font-size: 0.8rem; color: var(--muted); }
+.countdown { margin-left: auto; display: flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 0.82rem; }
+.countdown .days { background: var(--accent); color: var(--accent-ink); border-radius: 6px; padding: 2px 8px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.countdown .when { color: var(--muted); }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs a { text-decoration: none; color: var(--muted); padding: 8px 12px 10px; font-weight: 500; border-bottom: 2px solid transparent; white-space: nowrap; }
+nav.tabs a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--accent); }
+nav.tabs a:hover { color: var(--fg); }
+.save-status { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.save-status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.save-status[data-s="synced"] .dot { background: var(--good); }
+.save-status[data-s="local"] .dot { background: var(--warn); }
+.save-status[data-s="error"] .dot { background: var(--bad); }
+
+main { padding-block: 24px 64px; }
+.view[hidden] { display: none !important; }
+
+/* Generic UI */
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 8px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--fg); }
+.btn:disabled { opacity: 0.55; cursor: default; }
+.btn.small { padding: 4px 10px; font-size: 0.85rem; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+
+/* Practice */
+.practice { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start; }
+.filters { display: grid; gap: 18px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 110px); }
+.filters h3 { font-size: 0.72rem; font-family: var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+.chiplist { display: flex; flex-direction: column; gap: 2px; }
+.fchip { display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; border: 0; background: transparent; padding: 6px 10px; border-radius: 6px; color: var(--fg); }
+.fchip:hover { background: var(--surface-2); }
+.fchip[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.fchip .n { font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fchip[aria-pressed="true"] .n { color: var(--accent); }
+.mini-bar { height: 3px; background: var(--surface-2); border-radius: 2px; margin-top: 3px; overflow: hidden; }
+.mini-bar span { display: block; height: 100%; background: var(--good); }
+.fchip .lbl { flex: 1; min-width: 0; }
+.order-opt { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.qcard { padding: 24px; display: grid; gap: 16px; }
+.qmeta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tag { font-family: var(--f-mono); font-size: 0.74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.tag.topic { color: var(--fg); }
+.tag.k-output { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.tag.k-bug { background: var(--bad-soft); border-color: transparent; color: var(--bad); }
+.tag.k-calc { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+.tag.k-theory { background: var(--surface-2); border-color: transparent; color: var(--fg); }
+.tag.r0 { color: var(--bad); border-color: var(--bad); }
+.tag.r1 { color: var(--warn); border-color: var(--warn); }
+.tag.r2 { color: var(--good); border-color: var(--good); }
+.qid { margin-left: auto; font-family: var(--f-mono); font-size: 0.74rem; color: var(--muted); }
+.qtext { font-family: var(--f-body); font-size: 1.12rem; font-weight: 600; line-height: 1.45; }
+pre.code { margin: 0; background: var(--code-bg); color: var(--code-fg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-family: var(--f-mono); font-size: 0.85rem; line-height: 1.55; tab-size: 4; }
+.c-kw { color: var(--code-kw); } .c-str { color: var(--code-str); } .c-com { color: var(--code-com); font-style: italic; } .c-num { color: var(--code-num); } .c-pp { color: var(--code-pp); }
+label.lab { font-size: 0.85rem; font-weight: 500; color: var(--muted); display: block; margin-bottom: 6px; }
+textarea { width: 100%; min-height: 96px; resize: vertical; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); line-height: 1.5; }
+textarea:focus { border-color: var(--accent); outline: none; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hint { font-size: 0.8rem; color: var(--muted); }
+.model { border-left: 3px solid var(--good); background: var(--good-soft); padding: 14px 16px; border-radius: 0 8px 8px 0; }
+.model .eyebrow { color: var(--good); margin-bottom: 4px; }
+.model ul { margin: 6px 0; padding-left: 20px; }
+.feedback { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--surface-2); font-size: 0.92rem; display: grid; gap: 4px; }
+.feedback .score { font-family: var(--f-display); font-weight: 700; font-size: 1.1rem; }
+.rate { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rate .btn[data-r="0"] { border-color: var(--bad); color: var(--bad); }
+.rate .btn[data-r="1"] { border-color: var(--warn); color: var(--warn); }
+.rate .btn[data-r="2"] { border-color: var(--good); color: var(--good); }
+.rate .btn.suggested { box-shadow: 0 0 0 3px var(--accent-soft); }
+.empty { padding: 32px; text-align: center; color: var(--muted); }
+.session { display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--f-mono); font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+
+/* Mock */
+.stack { display: grid; gap: 16px; }
+.mock-setup { padding: 28px; display: grid; gap: 18px; max-width: 720px; }
+.mock-setup h2 { font-size: 1.6rem; }
+.choice-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.choice { flex: 1 1 220px; text-align: left; padding: 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); display: grid; gap: 4px; }
+.choice strong { font-family: var(--f-display); font-size: 1.1rem; }
+.choice:hover { border-color: var(--accent); }
+.timerbar { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 96px); z-index: 3; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 16px; }
+.timerbar .clock { font-family: var(--f-mono); font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.timerbar .clock.late { color: var(--bad); }
+.timerbar .grow { flex: 1; }
+.mq { padding: 20px; display: grid; gap: 12px; }
+.mq h3 { font-family: var(--f-body); font-size: 1rem; font-weight: 600; }
+.mq .num { font-family: var(--f-mono); color: var(--muted); margin-right: 6px; }
+.youans { white-space: pre-wrap; background: var(--bg); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; font-size: 0.92rem; }
+.youans.blank { color: var(--muted); font-style: italic; }
+.scorepick { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.scorepick button { width: 34px; height: 32px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); font-family: var(--f-mono); }
+.scorepick button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.scorepick button.sugg { box-shadow: 0 0 0 3px var(--accent-soft); }
+.total { font-family: var(--f-display); font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Progress */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat { padding: 16px 18px; }
+.stat .v { font-family: var(--f-display); font-size: 1.9rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .l { font-size: 0.82rem; color: var(--muted); }
+.ttable { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.ttable th { text-align: left; font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.ttable td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.ttable tr:last-child td { border-bottom: 0; }
+.ttable .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; min-width: 80px; }
+.bar span { display: block; height: 100%; border-radius: 4px; }
+.scroll-x { overflow-x: auto; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 18px 6px; }
+.section-head h2 { font-size: 1.1rem; }
+.pad { padding: 8px 18px 18px; }
+.mock-hist { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding-top: 10px; border-bottom: 1px solid var(--line); }
+.mock-hist .col { flex: 1; max-width: 48px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; }
+.mock-hist .col i { display: block; width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; }
+.mock-hist .col b { font-family: var(--f-mono); font-size: 0.75rem; font-weight: 500; }
+.hist-labels { display: flex; gap: 8px; }
+.hist-labels span { flex: 1; max-width: 48px; text-align: center; font-family: var(--f-mono); font-size: 0.7rem; color: var(--muted); }
+.weak-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.weak-list button { width: 100%; text-align: left; border: 0; background: transparent; padding: 8px 10px; border-radius: 6px; display: flex; gap: 10px; }
+.weak-list button:hover { background: var(--surface-2); }
+.weak-list .qid { margin: 0; flex: none; }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Plan */
+.week { padding: 6px 0; }
+.week h2 { font-size: 1.05rem; padding: 16px 18px 4px; }
+.day { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 12px 18px; border-top: 1px solid var(--line); }
+.day.today { background: var(--accent-soft); }
+.day .date { font-family: var(--f-mono); font-size: 0.82rem; color: var(--muted); }
+.day.today .date { color: var(--accent); font-weight: 600; }
+.day .date b { display: block; font-size: 1rem; color: var(--fg); font-weight: 600; }
+.day.today .date b { color: var(--accent); }
+.day h4 { margin: 0 0 4px; font-size: 0.98rem; font-family: var(--f-body); }
+.check { display: flex; gap: 10px; align-items: flex-start; padding: 3px 0; cursor: pointer; }
+.check input { margin-top: 4px; accent-color: var(--accent); width: 16px; height: 16px; flex: none; }
+.check.done span { color: var(--muted); text-decoration: line-through; }
+.day .go { margin-top: 6px; }
+
+/* Notes */
+.notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.note { padding: 18px 20px; }
+.note h2 { font-size: 1.08rem; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.note ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.note li { font-size: 0.93rem; }
+.lede { max-width: 70ch; margin: 0 0 16px; color: var(--muted); }
+.page-title { font-size: 1.6rem; margin-bottom: 6px; }
+
+@media (max-width: 860px) {
+  .practice { grid-template-columns: minmax(0, 1fr); }
+  .filters { position: static; }
+  .chiplist { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .fchip { border: 1px solid var(--line); }
+  .mini-bar { display: none; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .two, .notes { grid-template-columns: minmax(0, 1fr); }
+  .timerbar { top: calc(env(safe-area-inset-top, 0px) + 92px); }
+}
+@media (max-width: 520px) {
+  .qcard, .mq { padding: 16px; }
+  .countdown .when { display: none; }
+  .day { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .day .date b { display: inline; margin-right: 6px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .qcard { animation: rise .18s ease-out; }
+  @keyframes rise { from { transform: translateY(4px); opacity: .6; } to { transform: none; opacity: 1; } }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <h1>02159 Exam Trainer</h1>
+        <span class="prompt">Operating Systems · 20 short questions × 5 pts</span>
+      </div>
+      <div class="countdown" id="countdown"></div>
+      <div class="save-status" id="saveStatus" data-s="loading"><span class="dot"></span><span id="saveText">Loading progress…</span></div>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#practice" data-tab="practice">Practice</a>
+      <a href="#mock" data-tab="mock">Mock exam</a>
+      <a href="#progress" data-tab="progress">Progress</a>
+      <a href="#plan" data-tab="plan">Study plan</a>
+      <a href="#notes" data-tab="notes">Notes</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="view" id="view-practice"></section>
+  <section class="view" id="view-mock" hidden></section>
+  <section class="view" id="view-progress" hidden></section>
+  <section class="view" id="view-plan" hidden></section>
+  <section class="view" id="view-notes" hidden></section>
+</main>
+
+<script>
+/* ===================== Question bank ===================== */
+const TOPICS = [
+  { id: "arch",  name: "OS structure" },
+  { id: "c",     name: "C & pointers" },
+  { id: "proc",  name: "Processes & syscalls" },
+  { id: "thr",   name: "Threads" },
+  { id: "sync",  name: "Synchronization & IPC" },
+  { id: "dead",  name: "Deadlocks" },
+  { id: "sched", name: "Scheduling" },
+  { id: "mem",   name: "Memory & paging" },
+  { id: "io",    name: "Input/output" },
+  { id: "net",   name: "Multiprocessors & networks" },
+  { id: "osc",   name: "OS Challenge" },
+];
+const KINDS = {
+  output: "What prints?",
+  bug: "Find & fix",
+  calc: "Work it out",
+  theory: "Explain",
+};
+const TNAME = Object.fromEntries(TOPICS.map(t => [t.id, t.name]));
+
+// [topic, kind, question, code | null, model answer]
+const RAW = [
+/* ---------- OS structure ---------- */
+["arch","theory","What is the main advantage of a microkernel over a monolithic kernel, and what does it cost?",null,
+"**Reliability and isolation.** In a microkernel, drivers, file systems and other services run as separate user-mode processes. A bug in one (say, a crashing driver) cannot corrupt the kernel and the service can simply be restarted; the small kernel is also easier to verify.\n**Cost: performance.** Services talk through message passing, so a request needs extra mode and context switches where a monolithic kernel would make a direct function call."],
+["arch","theory","Why does the CPU have a user mode and a kernel mode?",null,
+"Protection. In user mode the CPU refuses privileged instructions (direct I/O, changing page tables, disabling interrupts), so a buggy or malicious program cannot take over the machine or touch other processes. Only the kernel runs in kernel mode, and it is entered only through controlled entry points: system calls (traps), interrupts and exceptions."],
+["arch","theory","Describe step by step what happens when a program calls `read()`.",null,
+"- The C library wrapper puts the system-call number and arguments in registers and executes a trap instruction.\n- The CPU switches to kernel mode and jumps to the kernel's system-call handler, which checks the arguments and dispatches to the read code.\n- If no data is ready, the process is blocked and another process runs until the I/O completes.\n- The result is stored in a register, the CPU returns to user mode, and the wrapper returns the byte count (or -1 and sets `errno`)."],
+["arch","theory","Name the three main process states and one event that causes each possible transition.",null,
+"- Running → Blocked: the process waits for an event, e.g. reading from the keyboard.\n- Running → Ready: the scheduler preempts it (time slice used up).\n- Ready → Running: the scheduler picks it.\n- Blocked → Ready: the awaited event happens (I/O completes).\nThere is no direct Blocked → Running transition: a woken process must wait to be scheduled."],
+["arch","theory","What is a context switch, and why is it expensive?",null,
+"Saving the CPU state of the running process or thread (registers, program counter, stack pointer) into its process table entry and loading another's. It costs the direct save/restore work plus indirect costs: switching address space (new page table, TLB flush) and cold caches afterwards. Switching between threads of the same process is cheaper because the address space stays the same."],
+["arch","theory","How does a hardware interrupt differ from a system call?",null,
+"An interrupt is **asynchronous**: a device (timer, disk, network card) signals the CPU at any moment, the CPU saves state and runs the matching handler in kernel mode. A system call is **synchronous**: the program itself executes a trap instruction on purpose to ask the kernel for a service. Both enter the kernel through a table of handler addresses."],
+
+/* ---------- C & pointers ---------- */
+["c","output","What does this print?",String.raw`#include <stdio.h>
+#define TWICE(x) x + x
+
+int main(void) {
+  printf("%d\n", TWICE(3) * 2);
+  return 0;
+}`,
+"`9`. The preprocessor does plain text substitution, so `TWICE(3) * 2` becomes `3 + 3 * 2`, and `*` binds tighter than `+`. Fix: `#define TWICE(x) ((x) + (x))`, which gives 12."],
+["c","output","What does this print?",String.raw`int a = 012;
+int b = 0x12;
+printf("%d %d\n", a, b);`,
+"`10 18`. A leading `0` makes the literal octal (1·8 + 2 = 10) and `0x` makes it hexadecimal (1·16 + 2 = 18)."],
+["c","output","What does this print?",String.raw`unsigned char u = 250;
+u = u + 10;
+printf("%d\n", u);`,
+"`4`. An `unsigned char` holds 0–255, so the result wraps around modulo 256: 260 − 256 = 4."],
+["c","output","What does this print on a typical laptop (x86-64 or Apple Silicon)?",String.raw`unsigned int x = 0x0A0B0C0D;
+unsigned char *p = (unsigned char *)&x;
+printf("%x\n", p[0]);`,
+"`d`. These CPUs are little-endian: the least significant byte (0x0D) is stored at the lowest address. A big-endian machine would print `a`. This is why network code converts with `htons()`/`htonl()`."],
+["c","output","What does this print?",String.raw`int A[5] = {10, 20, 30, 40, 50};
+int *p = A + 1;
+printf("%d %d %d\n", *p, *(p + 2), p[-1]);`,
+"`20 40 10`. `p` points at `A[1]`. Pointer arithmetic counts in elements, not bytes: `p + 2` is `A[3]`, and `p[-1]` is `*(p - 1)` = `A[0]`."],
+["c","calc","`int A[4][4]` starts at address 0x1000 and `sizeof(int)` is 4. What is the address of `A[2][1]`, and what is `*(A + 3)`?",null,
+"C stores 2D arrays row by row (row-major). `A[2][1]` is element 2·4 + 1 = 9, so 0x1000 + 9·4 = **0x1024**. `*(A + 3)` is row 3, which starts 3·16 bytes in: **0x1030**."],
+["c","bug","The program crashes. Why, and how do you fix it?",String.raw`void set(int *p) {
+  p = malloc(sizeof(int));
+  *p = 42;
+}
+
+int main(void) {
+  int *q = NULL;
+  set(q);
+  printf("%d\n", *q);
+}`,
+"C passes arguments by value: `p` is a copy of `q`, so storing the new address in `p` leaves `q` NULL, and `*q` is a NULL dereference (segfault). The allocation also leaks. Fix: pass the pointer's address:\n`void set(int **p) { *p = malloc(sizeof(int)); **p = 42; }`, call `set(&q)`, and `free(q)` afterwards."],
+["c","bug","What is wrong with this function?",String.raw`int *make(void) {
+  int x = 7;
+  return &x;
+}`,
+"It returns the address of a local variable. `x` lives in `make`'s stack frame, which is released on return, so the pointer dangles and later reads give garbage once the stack is reused. Fix: return the value itself, or allocate with `malloc` (caller frees)."],
+["c","bug","This server slowly uses more and more memory until it fails. Why? Fix it.",String.raw`while (1) {
+  char *buf = malloc(4096);
+  handle_request(buf);
+}`,
+"Memory leak: each iteration allocates 4 KB on the heap and never frees it, so the heap grows until `malloc` returns NULL or the system runs out of memory. Fix: `free(buf)` after `handle_request`, or allocate the buffer once outside the loop and reuse it."],
+["c","output","What does this print?",String.raw`void inc(int a, int *b) {
+  a++;
+  (*b)++;
+}
+
+int main(void) {
+  int x = 1, y = 1;
+  inc(x, &y);
+  printf("%d %d\n", x, y);
+}`,
+"`1 2`. `a` is a copy of `x`, so incrementing it changes nothing outside. `b` holds the address of `y`, so `(*b)++` changes `y` itself. This is how C emulates call by reference."],
+["c","output","What does this print? (`%zu` prints a `size_t`.)",String.raw`char s[] = "hello";
+printf("%zu %zu\n", sizeof(s), strlen(s));`,
+"`6 5`. The array holds the five characters plus the terminating `'\\0'`, so `sizeof` is 6; `strlen` counts characters up to the terminator."],
+["c","output","What does this print on a typical machine?",String.raw`short s = 40000;
+printf("%d\n", s);`,
+"`-25536`. A 16-bit signed `short` holds −32768…32767. 40000 doesn't fit, so the bit pattern is reinterpreted: 40000 − 65536 = −25536."],
+["c","theory","A recursive function with no base case crashes, and so does a loop that calls `malloc` without `free`. Which memory region runs out in each case?",null,
+"Recursion exhausts the **stack**: every call pushes a new frame (locals, return address) and none is popped, so it hits the stack size limit (e.g. 8 MB) and segfaults quickly. The leaking loop exhausts the **heap**: memory stays allocated until `malloc` fails or the OS runs out of memory, which takes longer."],
+
+/* ---------- Processes & syscalls ---------- */
+["proc","output","How many lines does this print?",String.raw`int main(void) {
+  fork();
+  fork();
+  fork();
+  printf("x\n");
+  return 0;
+}`,
+"**8**. Each `fork()` doubles the number of processes: 1 → 2 → 4 → 8, and every process runs the `printf`."],
+["proc","output","How many dashes are printed when run in a terminal?",String.raw`int main(void) {
+  for (int i = 0; i < 2; i++) {
+    fork();
+    printf("-\n");
+  }
+  return 0;
+}`,
+"**6**. In iteration 0 there are 2 processes, each printing once (2). In iteration 1 each forks again, giving 4 processes that each print (4). (If stdout is redirected to a file, buffered output is copied by `fork` and you would see 8.)"],
+["proc","output","What does this print, and is the order always the same?",String.raw`int x = 5;
+pid_t pid = fork();
+if (pid == 0) {
+  x += 10;
+  printf("child %d\n", x);
+  exit(0);
+}
+wait(NULL);
+x -= 1;
+printf("parent %d\n", x);`,
+"`child 15` then `parent 4`, always in this order. After `fork` each process has its own copy of `x`, so the child's change is invisible to the parent. The parent's `wait()` blocks until the child has exited, which fixes the order."],
+["proc","output","What does this print in a terminal?",String.raw`int main(void) {
+  printf("A");
+  fork();
+  printf("B\n");
+  return 0;
+}`,
+"`AB` twice. `printf(\"A\")` has no newline, so the \"A\" is still in the stdio buffer (user-space memory) when `fork()` copies the process. Each process then appends \"B\\n\" and flushes its own copy. Call `fflush(stdout)` before `fork()` to avoid this."],
+["proc","output","What does the parent print?",String.raw`pid_t pid = fork();
+if (pid == 0)
+  exit(300);
+int status;
+waitpid(pid, &status, 0);
+printf("%d\n", WEXITSTATUS(status));`,
+"`44`. Only the low 8 bits of the exit code are passed to the parent: 300 mod 256 = 44."],
+["proc","output","What does this print?",String.raw`printf("one\n");
+execl("/bin/echo", "echo", "two", (char *)NULL);
+printf("three\n");`,
+"`one` then `two`. A successful `exec` replaces the whole program image with `/bin/echo`, so the code after it never runs. `three` would only appear if `execl` failed."],
+["proc","theory","What is the difference between a zombie process and an orphan process?",null,
+"A **zombie** has exited but its parent has not yet called `wait()`; it keeps a process-table entry so the parent can collect its exit status. An **orphan** is still running but its parent has exited; it is adopted by `init`/`systemd` (or a subreaper), which waits for it, so `getppid()` changes."],
+["proc","theory","A program installs a SIGINT handler that ignores Ctrl-C. How can you still stop it, and why does that work?",null,
+"Send `SIGKILL` (`kill -9 <pid>`). `SIGKILL` and `SIGSTOP` cannot be caught, blocked or ignored: the kernel acts on them directly without running any handler in the process."],
+["proc","bug","The parent prints the data but never prints `done`. Why? Fix it.",String.raw`int fd[2];
+pipe(fd);
+if (fork() == 0) {
+  close(fd[0]);
+  write(fd[1], "data", 4);
+  exit(0);
+}
+char buf[64]; int n;
+while ((n = read(fd[0], buf, sizeof buf)) > 0)
+  write(STDOUT_FILENO, buf, n);
+wait(NULL);
+printf("done\n");`,
+"`read` returns 0 (end of file) only when **every** write end of the pipe is closed. The parent still holds `fd[1]` open, so after the child exits `read` blocks forever. Fix: `close(fd[1]);` in the parent right after `fork()`."],
+["proc","theory","How does a shell run `ls | wc -l`?",null,
+"- `pipe(fd)` creates the pipe.\n- Fork child 1: `dup2(fd[1], STDOUT_FILENO)`, close both pipe ends, `exec(\"ls\")`.\n- Fork child 2: `dup2(fd[0], STDIN_FILENO)`, close both ends, `exec(\"wc\", \"-l\")`.\n- The parent closes both ends (so `wc` sees EOF) and `wait`s for both children."],
+["proc","output","What is printed?",String.raw`int *A = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE,
+               MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+*A = 50;
+fork();
+*A = *A + 1;
+printf("%d\n", *A);`,
+"Normally `51` and `52`, in either order. `MAP_SHARED` memory is the same physical page in both processes, so the second increment sees the first. With `malloc` instead, each process gets its own copy and both print `51`. (It is still a race: both could read 50 first and print `51` twice.)"],
+["proc","theory","What does `fork()` return, and how does a program use that?",null,
+"It returns **0 in the child**, the **child's PID in the parent**, and **-1** on failure (no child created). The program branches on the value: `if (pid == 0)` runs child code, otherwise parent code (often ending with `wait`/`waitpid`)."],
+["proc","output","You run `./a.out > out.txt`. What appears in the terminal and what ends up in out.txt?",String.raw`dprintf(STDOUT_FILENO, "to stdout\n");
+dprintf(STDERR_FILENO, "to stderr\n");`,
+"The terminal shows `to stderr`; out.txt contains `to stdout`. The shell redirected only file descriptor 1 (stdout) to the file; file descriptor 2 (stderr) still points at the terminal."],
+
+/* ---------- Threads ---------- */
+["thr","theory","What do threads of the same process share, and what does each thread have for itself?",null,
+"**Shared:** the address space (code, global variables, heap), open file descriptors, signal handlers, the process ID.\n**Per thread:** its own stack (local variables, call history), registers, program counter and thread state."],
+["thr","output","What does this print?",String.raw`int *A;
+
+void *thread(void *arg) {
+  *A = *A + 1;
+  printf("A = %d\n", *A);
+  return NULL;
+}
+
+int main(void) {
+  pthread_t t;
+  A = malloc(sizeof(int));
+  *A = 50;
+  pthread_create(&t, NULL, thread, NULL);
+  *A = *A + 1;
+  printf("A = %d\n", *A);
+  pthread_join(t, NULL);
+}`,
+"Normally `A = 51` and `A = 52` (either thread can print first). Threads share the heap, so both increment the same integer. Compare with `fork()`, where both copies would print 51. Without a lock this is a race, so 51 twice is possible but rare."],
+["thr","bug","Each thread should print its own number 0–4, but the output is unpredictable. Why? Fix it.",String.raw`void *work(void *arg) {
+  printf("%d\n", *(int *)arg);
+  return NULL;
+}
+
+int main(void) {
+  pthread_t t[5];
+  int i;
+  for (i = 0; i < 5; i++)
+    pthread_create(&t[i], NULL, work, &i);
+  for (i = 0; i < 5; i++)
+    pthread_join(t[i], NULL);
+}`,
+"Every thread receives the **same** pointer `&i`, and `main` keeps changing `i` while the threads run. You see duplicates, gaps, or 5. Fix: give each thread its own copy, e.g. `int ids[5];` with `ids[i] = i;` and pass `&ids[i]`, or pass the value itself with `(void *)(long)i`."],
+["thr","output","What does this print?",String.raw`void *work(void *arg) {
+  sleep(1);
+  printf("thread\n");
+  return NULL;
+}
+
+int main(void) {
+  pthread_t t;
+  pthread_create(&t, NULL, work, NULL);
+  printf("main\n");
+  return 0;
+}`,
+"Only `main`. Returning from `main` calls `exit()`, which terminates the whole process, including the thread that is still sleeping. Fix: `pthread_join(t, NULL)` before returning (or end `main` with `pthread_exit`)."],
+["thr","theory","Compare user-level threads with kernel-level threads.",null,
+"**User-level threads** are managed by a library: very fast to create and switch (no system call), custom scheduling, but a blocking system call or page fault blocks all threads of the process, and they cannot run on several cores at once.\n**Kernel-level threads** are known to the OS: a blocking thread doesn't stop the others and threads run in parallel on multiple cores, but creating and switching costs a system call."],
+["thr","theory","Why is creating and switching threads cheaper than creating and switching processes?",null,
+"A new thread only needs a stack and a register set inside the existing address space. A new process needs its own address space (page tables, a copy-on-write copy of memory) and kernel structures. Switching threads in the same process keeps the page table and TLB contents, while a process switch changes address space. Threads can also communicate through shared memory without extra IPC."],
+["thr","theory","A web browser shows many tabs. Would you run each tab as a separate process or as a thread? Motivate.",null,
+"Processes per tab (what modern browsers do). Isolation: a crash or exploit in one tab's renderer cannot corrupt or read other tabs, and the OS can kill one tab. Downsides are more memory and more expensive communication, which is acceptable for tabs. Inside a tab, threads are a good fit for tasks that share data (layout, networking, JavaScript)."],
+
+/* ---------- Synchronization & IPC ---------- */
+["sync","theory","What is a race condition, and what conditions must a good solution for critical regions satisfy?",null,
+"A race condition is when the result depends on the timing of processes or threads accessing shared data. A critical region is the code that touches that shared data. A good solution needs:\n- No two at once inside their critical regions (mutual exclusion).\n- No assumptions about speeds or the number of CPUs.\n- Nobody outside a critical region may block others.\n- Nobody waits forever to enter."],
+["sync","output","Two threads run `add` concurrently. What will the program most likely print?",String.raw`long count = 0;
+
+void *add(void *arg) {
+  for (int i = 0; i < 1000000; i++)
+    count++;
+  return NULL;
+}
+// main: create two threads running add, join both,
+// then printf("%ld\n", count);`,
+"Most likely **less than 2,000,000**, and a different number each run. `count++` is three steps (load, add, store). When both threads load the same value, one increment is lost. Protect it with a mutex or an atomic increment to always get 2,000,000."],
+["sync","bug","This home-made lock is meant to protect `balance`. Why does it still fail sometimes? Fix it.",String.raw`int lock = 0;
+
+void *deposit(void *arg) {
+  for (int i = 0; i < 100000; i++) {
+    while (lock == 1) ;   // wait until free
+    lock = 1;             // take the lock
+    balance = balance + 1;
+    lock = 0;             // release
+  }
+  return NULL;
+}`,
+"Checking the lock and setting it are two separate steps. Both threads can see `lock == 0` before either sets it to 1, and both enter the critical region. (The compiler may also optimise the busy loop because `lock` isn't `volatile`/atomic.) Fix: use an atomic test-and-set or compare-and-swap instruction, or simply `pthread_mutex_lock`/`unlock`."],
+["sync","theory","When is a spinlock (busy waiting) more efficient than a blocking mutex?",null,
+"When the critical region is very short and the threads run on **different cores**. Spinning for a few hundred cycles is cheaper than blocking: two context switches plus scheduler work. On a single CPU, or when the lock is held long, spinning wastes CPU time the lock holder needs to finish."],
+["sync","theory","What is the difference between a mutex and a semaphore?",null,
+"A **mutex** is a lock with two states (locked/unlocked), used for mutual exclusion; the thread that locks it unlocks it. A **semaphore** is a counter with `down` (wait if 0, else decrement) and `up` (increment, wake a waiter). It can count resources (e.g. free buffer slots) and be used for signalling between threads. A semaphore initialised to 1 behaves like a mutex."],
+["sync","bug","Producer–consumer with semaphores (`mutex = 1`, `empty = N`, `full = 0`). The program sometimes freezes. Why? Fix it.",String.raw`void producer(void) {
+  while (1) {
+    int item = produce();
+    down(&mutex);
+    down(&empty);
+    insert(item);
+    up(&mutex);
+    up(&full);
+  }
+}
+void consumer(void) {
+  while (1) {
+    down(&full);
+    down(&mutex);
+    int item = remove_item();
+    up(&mutex);
+    up(&empty);
+    consume(item);
+  }
+}`,
+"**Deadlock** when the buffer is full: the producer takes `mutex`, then blocks on `empty` (0) while holding it; the consumer then blocks on `mutex` and can never free a slot. Fix: in the producer, call `down(&empty)` **before** `down(&mutex)`."],
+["sync","theory","Two processes created with `fork()` update the same file. Why doesn't a `pthread_mutex_t` global variable protect it, and what can you use instead?",null,
+"After `fork` each process has its own copy of the global mutex, so locking one copy doesn't affect the other. Use something the kernel shares between processes: a file lock (`lockf`/`flock`/`fcntl`), a named or shared-memory semaphore, or a process-shared mutex placed in shared memory."],
+["sync","calc","The balance file contains 0. Two child processes run at the same time: one reads it, adds 10000 and writes it back; the other reads it, subtracts 10000 and writes it back. No locking. What final balances are possible?",null,
+"**0, 10000 or −10000.** If one finishes before the other reads, the result is 0. If both read 0 before either writes, the last writer wins: +10000 or −10000. This is a lost-update race; a file lock around read-modify-write fixes it."],
+["sync","theory","Pick an IPC mechanism for each: (a) parent tells children to stop, (b) one process streams output to another, (c) two processes share a large data set, (d) processes on different machines.",null,
+"- (a) **Signals** (`kill()`, e.g. SIGTERM): an asynchronous notification with no data needed.\n- (b) **Pipe**: a byte stream between related processes.\n- (c) **Shared memory** (`mmap` with MAP_SHARED / `shm_open`): no copying, but it needs synchronisation.\n- (d) **Sockets**: work over the network."],
+["sync","theory","What is the priority inversion problem with busy waiting?",null,
+"A low-priority process L holds a lock. A high-priority process H becomes ready and spins waiting for the lock. With strict priority scheduling, L never gets the CPU to finish and release it, so H spins forever. Fixes: blocking locks instead of spinning, or priority inheritance (L temporarily gets H's priority)."],
+["sync","theory","What is a condition variable used for, and why is it always used together with a mutex?",null,
+"It lets a thread sleep until some condition on shared data is true (e.g. queue not empty) without busy waiting. The mutex protects that data. `pthread_cond_wait` releases the mutex and sleeps in one atomic step, then re-acquires the mutex on wake-up, so no signal is lost between checking and sleeping. Always re-check the condition in a `while` loop."],
+["sync","theory","Why do locks need special hardware instructions such as test-and-set (TSL) or compare-and-swap?",null,
+"A correct lock must read and set the lock variable in **one indivisible step**. Ordinary load-then-store can be interrupted, or interleaved with another core, between the two. TSL/XCHG/CAS do the read and write atomically and lock the memory bus or cache line, so only one CPU can win."],
+
+/* ---------- Deadlocks ---------- */
+["dead","theory","What four conditions must hold for a resource deadlock?",null,
+"- **Mutual exclusion:** each resource is held by at most one process.\n- **Hold and wait:** processes hold resources while requesting more.\n- **No preemption:** resources can't be taken away.\n- **Circular wait:** a cycle of processes each waiting for the next.\nBreaking any one of them prevents deadlock."],
+["dead","theory","What are the four general strategies for dealing with deadlocks?",null,
+"- **Ignore it** (ostrich algorithm): what most general-purpose OSes do, when deadlocks are rare.\n- **Detect and recover:** find cycles, then preempt, roll back or kill a process.\n- **Avoid:** only grant requests that keep the system in a safe state (banker's algorithm).\n- **Prevent:** structurally remove one of the four conditions, e.g. lock ordering."],
+["dead","bug","Thread 1 runs `transfer(&X, &Y, 10)` while thread 2 runs `transfer(&Y, &X, 5)`. What can go wrong? Fix it.",String.raw`void transfer(account *from, account *to, int amt) {
+  pthread_mutex_lock(&from->lock);
+  pthread_mutex_lock(&to->lock);
+  from->balance -= amt;
+  to->balance += amt;
+  pthread_mutex_unlock(&to->lock);
+  pthread_mutex_unlock(&from->lock);
+}`,
+"**Deadlock:** thread 1 locks X and waits for Y, while thread 2 locks Y and waits for X (circular wait). Fix: always acquire locks in a global order, e.g. lock the account with the lower ID first, whichever direction the transfer goes."],
+["dead","theory","Compare one global lock for all accounts with one lock per account.",null,
+"**One global lock:** simple and cannot deadlock, but it serialises everything; two transfers between unrelated accounts can't run in parallel, so it scales badly on multicore machines.\n**One lock per account:** unrelated transfers run in parallel, but it needs careful lock ordering to avoid deadlock and has slightly more overhead."],
+["dead","calc","There are 12 identical resource units. A holds 4 (max 8), B holds 3 (max 5), C holds 2 (max 9). Is this state safe?",null,
+"Free = 12 − 9 = 3. B still needs 2 ≤ 3: run B, which then frees 5 (free = 6). A needs 4 ≤ 6: run A (free = 10). C needs 7 ≤ 10: run C. The order **B, A, C** lets everyone finish, so the state is **safe**."],
+["dead","theory","Explain the difference between deadlock, livelock and starvation.",null,
+"**Deadlock:** processes are blocked forever waiting for each other; nothing runs. **Livelock:** processes keep running and reacting to each other (e.g. both back off and retry in lockstep) but make no progress. **Starvation:** the system progresses, but one process keeps being passed over (e.g. low priority) and never gets the resource."],
+["dead","theory","Which deadlock condition does 'request all resources at the start' remove, and what are its downsides?",null,
+"It removes **hold and wait**. Downsides: processes often don't know in advance what they will need, and resources sit idle while held for the whole run, so utilisation is poor. A process needing many popular resources may also starve."],
+
+/* ---------- Scheduling ---------- */
+["sched","theory","What is the main advantage of preemptive scheduling over non-preemptive scheduling?",null,
+"The OS can take the CPU away (on a timer interrupt) from a running process. One CPU-hungry or buggy process (e.g. an infinite loop) can no longer monopolise the CPU, so interactive processes stay responsive and CPU time is shared fairly. Cost: more context switches and a need for synchronisation."],
+["sched","calc","Three jobs arrive at time 0 with run times A = 8, B = 4, C = 2. Compute the average turnaround time for FCFS (order A, B, C) and for SJF.",null,
+"**FCFS:** A finishes at 8, B at 12, C at 14 → (8 + 12 + 14) / 3 = **11.33**.\n**SJF:** C at 2, B at 6, A at 14 → (2 + 6 + 14) / 3 = **7.33**. Running short jobs first minimises the average turnaround."],
+["sched","calc","Round robin with quantum 2. Jobs arrive at time 0 in order A (5), B (3), C (1). When does each finish, and what is the average turnaround?",null,
+"Timeline: A 0–2, B 2–4, C 4–5 (done), A 5–7, B 7–8 (done), A 8–9 (done).\nC = 5, B = 8, A = 9 → average (5 + 8 + 9) / 3 = **7.33**."],
+["sched","theory","How should the round-robin quantum be chosen?",null,
+"Too short: too much time goes to context switches (e.g. a 1 ms switch with a 4 ms quantum wastes 20%). Too long: it behaves like FCFS and interactive response gets poor. A typical compromise is 20–50 ms, a bit longer than a typical CPU burst, so most interactive processes block before the quantum ends."],
+["sched","theory","What are CPU-bound and I/O-bound processes, and why do schedulers often favour I/O-bound ones?",null,
+"CPU-bound processes compute for long bursts; I/O-bound ones run briefly and then wait for I/O. Giving the I/O-bound process the CPU quickly lets it start its next I/O soon, keeping disks and network busy in parallel with the CPU-bound work. It also keeps interactive programs responsive."],
+["sched","theory","Why can priority scheduling cause starvation, and how is it usually fixed?",null,
+"While higher-priority processes keep arriving, a low-priority one may never run. Fix: **aging**. Gradually raise a waiting process's priority (or lower the running one's each tick) so everyone runs eventually; dynamic priorities or giving each priority class a share of the CPU also work."],
+["sched","theory","What does a scheduler optimise for in batch, interactive and real-time systems?",null,
+"- **Batch:** throughput (jobs per hour), turnaround time, CPU utilisation.\n- **Interactive:** response time, matching user expectations (proportionality).\n- **Real-time:** meeting deadlines and predictability.\n- **All:** fairness, enforcing policy, keeping all parts of the system busy."],
+["sched","theory","Shortest Job First is optimal for average turnaround. Why is it hard to use in practice, and how do systems approximate it?",null,
+"The scheduler doesn't know run times in advance. Approximation: predict the next CPU burst from past bursts with exponential averaging (aging): estimate = a·last burst + (1 − a)·previous estimate. Also, SJF is only optimal when all jobs are available at once, and long jobs can starve."],
+
+/* ---------- Memory & paging ---------- */
+["mem","theory","Why do operating systems use virtual memory?",null,
+"- **Isolation/protection:** each process has its own address space and cannot touch other processes' memory.\n- **Bigger than RAM:** only the pages in use need to be in physical memory; the rest lives on disk.\n- **Relocation and simplicity:** each program can use the same addresses wherever it sits in RAM.\n- **Sharing:** pages can still be shared when wanted (libraries, copy-on-write)."],
+["mem","calc","With 4 KB pages (4096 bytes), what is the virtual page number and offset of virtual address 20000?",null,
+"20000 / 4096 = 4.88, so **page 4**. Offset = 20000 − 4·4096 = 20000 − 16384 = **3616**."],
+["mem","calc","Pages are 4000 bytes (simplified). The page table is: page 0 → frame 2, page 1 → frame 1, page 2 → frame 6, page 3 → frame 0, page 4 → not present, page 5 → frame 3. Translate virtual addresses 9500 and 17000.",null,
+"**9500:** page 2 (8000–12000), offset 1500 → frame 6 → 6·4000 + 1500 = **25500**.\n**17000:** page 4 (16000–20000) is not present, so it causes a **page fault**. The OS loads the page from disk into a free frame (evicting one if needed), updates the table and restarts the instruction."],
+["mem","theory","What is a TLB and why is it needed?",null,
+"The Translation Lookaside Buffer is a small, fast cache in the MMU that holds recent virtual-page → physical-frame translations. Without it, every memory access would need one or more extra memory reads to walk the page table. Because programs have locality, most lookups hit the TLB."],
+["mem","calc","FIFO page replacement, 3 frames, initially empty. Reference string: 1 2 3 4 1 2 5 1 2 3 4 5. How many page faults?",null,
+"**9 faults.** Frames after each fault: 1, 12, 123, 234 (evict 1), 341, 412, 125; then 1 and 2 hit; 253 (evict 1), 534 (evict 2); 5 hits. Fun fact: with 4 frames FIFO gives 10 faults (Belady's anomaly)."],
+["mem","calc","LRU page replacement, 3 frames, initially empty. Reference string: 1 2 3 4 1 2 5 1 2 3 4 5. How many page faults?",null,
+"**10 faults.** Only references 1 and 2 at positions 8–9 hit. Each other reference evicts the least recently used page: 4 evicts 1, 1 evicts 2, 2 evicts 3, 5 evicts 4, 3 evicts 5, 4 evicts 1, 5 evicts 2."],
+["mem","theory","What is the weakness of NFU (Not Frequently Used) page replacement? Give a real-world example where it performs badly, and the usual fix.",null,
+"NFU only adds up reference counts and **never forgets**. Pages used heavily early on keep high counts and stay in memory long after they stop being used, while pages for the current phase get evicted. Example: a photo editor that runs a heavy import/indexing phase at start-up and is then used only for editing; the import code and data stay resident. Fix: **aging**, where counters are shifted right each tick so old references fade."],
+["mem","theory","What is the optimal page replacement algorithm, and why can't it be implemented?",null,
+"Evict the page that will be used **furthest in the future** (or never). It gives the fewest possible faults, but the OS cannot know future references. It is used as a benchmark in simulations to evaluate real algorithms."],
+["mem","theory","What is thrashing, and how does the working-set idea help?",null,
+"Thrashing: the processes together need more pages than fit in RAM, so the system spends most of its time paging and almost none computing. The working set is the set of pages a process used recently. The OS keeps each running process's working set in memory and, if they don't all fit, swaps out whole processes instead of letting everyone fault."],
+["mem","output","Both processes print the same address for `A`, but different values. How is that possible?",String.raw`int A;
+int main(void) {
+  A = 50;
+  fork();
+  A = A + 1;
+  printf("A = %d, address: %p\n", A, &A);
+}`,
+"Both print `A = 51` at the same address. `&A` is a **virtual** address. After `fork`, both processes have identical virtual layouts, but their page tables map that page to **different physical frames** (copy-on-write: the page is copied when first written). Same virtual address, separate memory."],
+["mem","theory","Two loops visit every element of `int a[1000][1000]`: one as `a[i][j]` (row by row), one as `a[j][i]` (column by column). Which is faster and why?",null,
+"Row by row (`a[i][j]`). C stores arrays row-major, so it walks consecutive addresses: every cache line and page is fully used before moving on. Column order jumps 4000 bytes each step, touching a new cache line, and often a new page/TLB entry, on almost every access, so it causes far more cache and TLB misses."],
+["mem","theory","What is internal and external fragmentation, and which does paging suffer from?",null,
+"**Internal:** wasted space inside an allocated unit, e.g. the unused part of a process's last page. **External:** free memory split into small holes between allocations, none big enough for a request. Paging suffers only from internal fragmentation (half a page per segment on average); variable-size allocation and segmentation suffer from external fragmentation."],
+["mem","theory","What is copy-on-write, and why does it make `fork()` fast?",null,
+"Instead of copying all memory at `fork`, parent and child share the same physical pages, marked read-only. When either one writes, the write causes a protection fault and the kernel copies just that page for the writer. Pages that are never written (code, or anything before an immediate `exec`) are never copied."],
+["mem","calc","32-bit virtual addresses, 4 KB pages, 4-byte page table entries. How big is a single-level page table per process, and why do real systems use multi-level tables?",null,
+"4 KB = 2^12 bytes of offset, so 2^20 pages, and 2^20 × 4 B = **4 MB per process**, even for a tiny program. Multi-level tables only allocate second-level tables for regions actually in use, so a small process needs only a few KB of page tables."],
+
+/* ---------- I/O ---------- */
+["io","theory","Compare programmed I/O, interrupt-driven I/O and DMA.",null,
+"- **Programmed I/O:** the CPU polls the device and copies every byte itself. Simple, but the CPU is busy the whole time.\n- **Interrupt-driven:** the CPU starts the transfer and does other work; the device interrupts when ready. But there is one interrupt per byte or word.\n- **DMA:** a DMA controller copies the whole block to memory and interrupts once at the end. The CPU is almost free."],
+["io","theory","When is polling better than interrupts?",null,
+"When the device responds very quickly or events arrive at a very high rate (e.g. high-speed network cards under load). Then each interrupt's overhead (saving state, handler, context switch) costs more than briefly checking a status register. Interrupts are better when events are rare or unpredictable, like key presses."],
+["io","theory","What does DMA save, what does it cost, and when does it matter most?",null,
+"It saves the CPU from copying data byte by byte: the CPU only programs the controller and handles one interrupt at the end. Costs: setup overhead (not worth it for a few bytes), extra hardware, and the controller competing with the CPU for the memory bus. It matters most when the CPU has useful work to do meanwhile, e.g. many CPU-bound processes; then freeing the CPU from copying directly raises throughput."],
+["io","theory","Give an OS function where interrupt-driven I/O is important for the user experience, and explain why.",null,
+"Keyboard and mouse input. Key presses are rare and unpredictable compared with CPU speed. Polling would either waste CPU or add lag. With interrupts, the input is handled within microseconds of the event, so typing and the cursor feel instant, and the CPU runs other work the rest of the time. (Touchscreens and audio buffers are other good examples.)"],
+["io","theory","What are the layers of I/O software, and why is device independence useful?",null,
+"From bottom to top: interrupt handlers → device drivers (device-specific code) → device-independent OS software (naming, buffering, protection, error reporting, uniform interface) → user-level libraries (e.g. `printf`). Device independence means programs use the same calls (`open/read/write`) for disks, USB sticks, terminals or pipes, so they don't need to change per device."],
+["io","theory","Why does the kernel buffer I/O, and what is double buffering?",null,
+"Buffering evens out speed differences between the device and the process and allows transfers in large blocks (one system call or interrupt per block instead of per byte). Double buffering uses two buffers: the device fills one while the kernel or process empties the other, so neither has to wait."],
+["io","theory","What is the difference between blocking and non-blocking I/O, and why would a server use non-blocking I/O?",null,
+"A blocking call suspends the thread until data is available. A non-blocking call returns immediately (with EAGAIN if nothing is ready). A server can use non-blocking I/O with `select`/`poll`/`epoll` to serve many clients from one or a few threads, instead of one blocked thread per client."],
+
+/* ---------- Multiprocessors & networks ---------- */
+["net","theory","What is the main advantage of a multiprocessor system, and what limits it?",null,
+"Real parallelism: several threads or processes run at the same time, giving higher throughput and better responsiveness (plus some fault tolerance). Limits: the sequential part of a program (Amdahl's law), contention for shared memory, buses and locks, and cache-coherence traffic. A single-threaded program does not get faster."],
+["net","theory","What is affinity scheduling on a multiprocessor, and why does it help?",null,
+"Try to run a thread on the same CPU it ran on last time. Its data is probably still in that CPU's cache (and TLB), so it avoids cache misses and coherence traffic from migrating. Two-level scheduling: per-CPU run queues, with load balancing only when a CPU is idle."],
+["net","theory","Distinguish shared-memory multiprocessors, multicomputers and distributed systems.",null,
+"- **Multiprocessor:** CPUs share one physical memory; communication through memory is very fast.\n- **Multicomputer:** nodes with private memory joined by a fast interconnect; they communicate by message passing.\n- **Distributed system:** independent full computers over a normal network (e.g. the Internet), loosely coupled, communicating with protocols; slowest but most scalable.\nSpeed goes down and scale goes up from top to bottom."],
+["net","theory","When would you choose UDP over TCP?",null,
+"UDP is connectionless and has no retransmission, ordering or congestion control, so it has low latency and little overhead. Use it when a late packet is worse than a lost one (voice, video, games), for short request/response exchanges (DNS), or when the application handles reliability itself. TCP is for byte streams that must arrive complete and in order (web, file transfer)."],
+["net","theory","Why are communication protocols needed to build distributed applications over the Internet?",null,
+"Machines with different hardware, operating systems and programs must agree exactly on message formats, byte order, addressing, who speaks when, and what to do on loss or errors. Layered protocols (IP for routing, TCP/UDP for delivery, application protocols such as HTTP/DNS) make that agreement standard, so independently written programs can interoperate."],
+["net","theory","Why does socket code call `htons(PORT)` and `htonl(...)`?",null,
+"Network protocols define **big-endian** byte order (network byte order), but most CPUs are little-endian. `htons`/`htonl` convert host order to network order for 16- and 32-bit values (`ntohs`/`ntohl` convert back). Without them a little-endian machine would send port 9876 with its bytes swapped, i.e. a different port."],
+["net","theory","In a UDP echo server, what do `socket`, `bind`, `recvfrom` and `sendto` do? Why doesn't the client need `bind`?",null,
+"`socket` creates an endpoint (a file descriptor). `bind` attaches it to a well-known local address and port so clients know where to send. `recvfrom` blocks until a datagram arrives and also returns the sender's address. `sendto` sends a datagram to a given address. The client doesn't need a fixed port: the OS assigns it a temporary one automatically on the first `sendto`, and the server replies to whatever address it saw."],
+
+/* ---------- OS Challenge ---------- */
+["osc","theory","Requests to your OS Challenge server now vary a lot in difficulty (size of the search range). How would you design the scheduler?",null,
+"A good answer states assumptions and motivates. One option:\n- Estimate each request's cost from its range size, which is known on arrival.\n- Serve requests with a **priority/SJF-like** policy (weighted by the request's priority if the scoring uses it), so cheap requests aren't stuck behind huge ones. Average latency drops.\n- Prevent starvation of big requests with aging.\n- Split very large ranges into chunks handled by several worker threads, so big jobs finish faster and workers stay balanced.\n- Use a fixed pool of worker threads (about the number of cores) fed by a priority queue protected by a mutex/condition variable."],
+["osc","theory","Thread-per-request versus a fixed thread pool for a server like the OS Challenge: which, and why?",null,
+"A fixed pool of about one worker per core plus a request queue. Thread-per-request creates and destroys threads constantly and, under load, runs far more CPU-bound threads than cores, so time is lost to context switches and cache thrashing. A pool caps concurrency, reuses threads, and lets you choose the order requests are served in (scheduling)."],
+["osc","theory","When would caching previous results improve the OS Challenge server, and what does it cost?",null,
+"When the same request (e.g. the same hash) is repeated. A lookup in a hash table is far cheaper than recomputing, so repeated requests are answered almost instantly. Costs: memory for the table, a lock (or a concurrent structure) since workers share it, and wasted overhead if repeats are rare. Measure the repeat rate before relying on it."],
+["osc","theory","How should you test whether an experiment really improves the OS Challenge score?",null,
+"State a hypothesis (what should improve and why). Change **one** variable compared to a baseline, run both with the same client settings and machine, repeat several runs, and compare the average score and its spread. Explain the result (better, worse, no difference) using OS concepts, e.g. context switches or cache behaviour."],
+["osc","theory","Would you use processes or threads for the workers in the OS Challenge server? Motivate.",null,
+"Threads, usually. They are cheaper to create and switch, and they share memory, so a shared request queue, cache or 'found' flag needs no IPC. The cost is that shared data needs mutexes and a crash in one thread kills the whole server, which is acceptable here. Processes give isolation but make sharing a queue or cache expensive (pipes or shared memory plus process-shared locks)."],
+];
+
+const Q = [];
+(() => {
+  const counters = {};
+  for (const [topic, kind, text, code, answer] of RAW) {
+    counters[topic] = (counters[topic] || 0) + 1;
+    Q.push({ id: `${topic}-${String(counters[topic]).padStart(2, "0")}`, topic, kind, text, code, answer });
+  }
+})();
+const QBYID = Object.fromEntries(Q.map(q => [q.id, q]));
+
+/* ===================== Notes ===================== */
+const NOTES = {
+  arch: ["Kernel mode can run privileged instructions; user mode cannot. Enter the kernel only via trap (syscall), interrupt or exception.",
+         "Monolithic: everything in the kernel, fast calls, one bug can crash all. Microkernel: minimal kernel, services as user processes, more reliable, slower IPC.",
+         "Process states: running, ready, blocked. Blocked never goes straight to running.",
+         "Context switch = save/restore registers + PC, and switch address space (TLB flush) for processes."],
+  c: ["Macros are text substitution: always put brackets around arguments and the whole body.",
+      "`0` prefix = octal, `0x` = hex. Overflow wraps: unsigned mod 2^n, a signed narrowing cast reinterprets bits.",
+      "C is call by value. To change a caller's variable pass its address; to change a caller's pointer pass `int **`.",
+      "Arrays are row-major; `A[i][j]` sits at base + (i·cols + j)·sizeof(elem). `p + k` moves by k elements.",
+      "Stack = locals and frames (never return &local). Heap = malloc/free (leaks when you forget free)."],
+  proc: ["`fork()` returns 0 in the child, the child PID in the parent, −1 on error. n forks in a row → 2^n processes.",
+         "After fork the memory is copied (copy-on-write): changes are invisible to the other process. MAP_SHARED is the exception.",
+         "`exec` replaces the program; code after it runs only if exec fails. `wait/waitpid` collects exit status (only the low 8 bits).",
+         "Unflushed stdio buffers are duplicated by fork: `fflush(stdout)` first.",
+         "Pipes: close the unused ends, otherwise `read` never sees EOF. `dup2(fd, STDOUT_FILENO)` redirects output.",
+         "Signals: handler via `signal()`; SIGKILL/SIGSTOP can't be caught. Zombie = exited, not yet waited for; orphan = adopted by init."],
+  thr: ["Threads share code, globals, heap and files; each has its own stack, registers and PC.",
+        "Return from main ends every thread: join first.",
+        "Never pass `&i` of a loop counter to threads; give each thread its own copy.",
+        "User-level threads: fast but one blocking call blocks all, no multicore. Kernel threads: true parallelism, costlier switches."],
+  sync: ["Race = result depends on timing. `x++` is load + add + store, not atomic.",
+         "Locks need atomic hardware (TSL/XCHG/CAS); a plain 'check then set' flag is broken.",
+         "Spinlock: good for short critical regions on multicore. Mutex/blocking: good when waits are long or on a single core.",
+         "Semaphores: down/up on a counter. Producer–consumer: down(empty) before down(mutex).",
+         "A pthread mutex in a global doesn't work across fork'd processes: use file locks or shared-memory semaphores.",
+         "IPC: signals (notify), pipes (stream), shared memory (big data, needs sync), sockets (network)."],
+  dead: ["Four conditions: mutual exclusion, hold and wait, no preemption, circular wait.",
+         "Strategies: ignore, detect + recover, avoid (banker's, safe state), prevent (break a condition).",
+         "Lock ordering (lowest ID first) breaks circular wait. One global lock is safe but kills parallelism.",
+         "Safe state check: repeatedly find a process whose remaining need ≤ free, let it finish, add its resources back."],
+  sched: ["Preemptive: timer interrupt can take the CPU away, so responsiveness and fairness.",
+          "FCFS simple but convoy effect; SJF gives the best average turnaround but needs run times (estimate by aging).",
+          "RR quantum: too small = switch overhead, too large = FCFS. Typically 20–50 ms.",
+          "Favour I/O-bound processes to keep devices busy. Priority scheduling: use aging against starvation.",
+          "Turnaround = finish − arrival. Write the timeline before averaging."],
+  mem: ["Virtual address = (page number, offset). Page = addr / page size, offset = addr mod page size.",
+        "Absent page → page fault → OS loads it (maybe evicts a page), updates the table, restarts the instruction.",
+        "TLB caches translations; multi-level page tables save space for sparse address spaces.",
+        "Replacement: Optimal (benchmark), FIFO (Belady's anomaly), LRU (good, costly), NFU (never forgets) → aging fixes it, clock/WSClock in practice.",
+        "Thrashing: working sets don't fit; fix by swapping out whole processes.",
+        "Locality matters: row-major traversal beats column-major."],
+  io: ["Programmed I/O (CPU busy) < interrupt-driven (an interrupt per unit) < DMA (one interrupt per block).",
+       "Polling wins for very fast or frequent events; interrupts win for rare, unpredictable events (keyboard).",
+       "DMA frees the CPU: most valuable when the CPU has other work (many CPU-bound processes); not worth it for tiny transfers.",
+       "Layers: interrupt handlers → drivers → device-independent software → user libraries."],
+  net: ["Multiprocessor: shared memory, fast. Multicomputer: message passing, private memory. Distributed: loosely coupled over a network.",
+        "Multiprocessor scheduling: affinity (cache-warm CPU), gang scheduling for communicating threads.",
+        "Spinlocks make sense on multiprocessors (the lock holder runs elsewhere).",
+        "UDP: fast and unreliable (DNS, games, streaming). TCP: reliable, ordered stream.",
+        "Network byte order is big-endian: htons/htonl. Server: socket → bind → recvfrom/sendto."],
+  osc: ["Know your group's design: threading model, queue, scheduling, caching, the experiments and their results.",
+        "Know your teammates' experiments and what other groups presented at the workshop.",
+        "Always motivate with OS concepts: context switches, cache behaviour, contention, starvation.",
+        "Experiment = hypothesis + one variable changed + repeated runs vs a baseline + explanation.",
+        "Check these model answers against your own OS Challenge specification."],
+};
+
+/* ===================== Study plan ===================== */
+const PLAN = [
+  { week: "Week 1 · C, processes, threads, synchronization", days: [
+    ["2026-11-19", "C refresher", ["Compile and run the W0 C examples (types, preprocessor, pointers)", "Practice: C & pointers"], "c"],
+    ["2026-11-20", "OS structure", ["Read: kernel vs user mode, system calls, microkernel vs monolithic (Tanenbaum ch. 1)", "Practice: OS structure"], "arch"],
+    ["2026-11-21", "fork, wait, exec, signals", ["Run W3 examples 1–10 and predict each output first", "Practice: Processes & syscalls"], "proc"],
+    ["2026-11-22", "Files, pipes and dup2", ["Run W3 examples 11–15; draw the file descriptor table before and after dup2", "Redo the pipe questions"], "proc"],
+    ["2026-11-23", "Threads", ["Read: threads vs processes (ch. 2.2); run W4 examples", "Practice: Threads"], "thr"],
+    ["2026-11-24", "Race conditions and locks", ["Read: ch. 2.3 up to semaphores; run all W5 examples several times", "Explain why 3-threads_lock.c still fails"], "sync"],
+    ["2026-11-25", "Semaphores, monitors, IPC", ["Read: producer–consumer, mutexes, condition variables", "Practice: Synchronization & IPC"], "sync"],
+  ]},
+  { week: "Week 2 · Deadlocks, scheduling, memory, I/O, networks", days: [
+    ["2026-11-26", "Deadlocks", ["Read: ch. 6 (conditions, detection, avoidance, prevention)", "Practice: Deadlocks"], "dead"],
+    ["2026-11-27", "Scheduling", ["Read: ch. 2.4; hand-calculate FCFS, SJF and RR examples", "Practice: Scheduling"], "sched"],
+    ["2026-11-28", "Virtual memory and paging", ["Read: ch. 3.1–3.3 (paging, page tables, TLB); run W6/W8 examples", "Practice the address translation questions"], "mem"],
+    ["2026-11-29", "Page replacement", ["Read: ch. 3.4 (optimal, FIFO, LRU, NFU, aging, clock, WSClock)", "Hand-run reference strings for FIFO and LRU"], "mem"],
+    ["2026-11-30", "Memory wrap-up", ["Thrashing, working set, copy-on-write; run double-array v1 vs v2", "Practice: Memory & paging"], "mem"],
+    ["2026-12-01", "Input/output", ["Read: ch. 5 (polling, interrupts, DMA, drivers, buffering)", "Practice: Input/output"], "io"],
+    ["2026-12-02", "Multiprocessors and networks", ["Read: ch. 8 (multiprocessor scheduling, distributed systems); run the W7 socket client/server", "Practice: Multiprocessors & networks"], "net"],
+  ]},
+  { week: "Week 3 · Exam practice", days: [
+    ["2026-12-03", "OS Challenge review", ["Write down your group's design and every experiment with its result", "Practice: OS Challenge"], "osc"],
+    ["2026-12-04", "Mock exam 1", ["Full mock exam (20 questions, 4 h) in this app", "Review: redo every question you scored ≤ 2"], "mock"],
+    ["2026-12-05", "Find & fix drills", ["Fix 2-threads_plain.c and 3-threads_lock.c yourself; fix bar2 in code.c with int **", "Practice: all Find & fix questions"], "bug"],
+    ["2026-12-06", "Weak topics + notes", ["Practice your two weakest topics (see Progress)", "Finish one page of your own notes per topic"], "weak"],
+    ["2026-12-07", "Mock exam 2", ["Second full mock exam", "Review missed questions"], "mock"],
+    ["2026-12-08", "Past paper", ["Do the 2025 exam paper under time, answering in 2–3 lines each", "Compare your answers with the slides and book"], null],
+    ["2026-12-09", "Light review", ["Notes + missed questions only", "Check your room and start time on the exam plan; test gcc and man pages offline; charge your laptop"], null],
+  ]},
+];
+
+/* ===================== Helpers ===================== */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function fmt(text) {
+  const lines = String(text).split("\n");
+  let html = "", inList = false;
+  for (const line of lines) {
+    const isItem = line.startsWith("- ");
+    if (isItem && !inList) { html += "<ul>"; inList = true; }
+    if (!isItem && inList) { html += "</ul>"; inList = false; }
+    const body = inline(isItem ? line.slice(2) : line);
+    html += isItem ? `<li>${body}</li>` : (body ? `<p style="margin:0 0 6px">${body}</p>` : "");
+  }
+  if (inList) html += "</ul>";
+  return html;
+}
+function inline(s) {
+  return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+const KW = new Set("int char void short long unsigned signed float double return if else for while do break continue struct static const sizeof pid_t pthread_t size_t account volatile".split(" "));
+function hl(code) {
+  const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|(^[ \t]*#[^\n]*)|\b([A-Za-z_]\w*)\b|\b(0x[0-9a-fA-F]+|\d+)\b/gm;
+  let out = "", last = 0, m;
+  while ((m = re.exec(code))) {
+    out += esc(code.slice(last, m.index));
+    if (m[1]) out += `<span class="c-com">${esc(m[1])}</span>`;
+    else if (m[2]) out += `<span class="c-str">${esc(m[2])}</span>`;
+    else if (m[3]) out += `<span class="c-pp">${esc(m[3])}</span>`;
+    else if (m[4]) out += KW.has(m[4]) ? `<span class="c-kw">${m[4]}</span>` : esc(m[4]);
+    else if (m[5]) out += `<span class="c-num">${m[5]}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(code.slice(last));
+}
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const EXAM = new Date(2026, 11, 10);
+function daysLeft() {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((EXAM - t) / 864e5);
+}
+const pct = x => `${Math.round(x * 100)}%`;
+function barColor(x) { return x >= 0.7 ? "var(--good)" : x >= 0.4 ? "var(--warn)" : "var(--bad)"; }
+
+/* ===================== State & storage ===================== */
+const LS_KEY = "os-exam-trainer-v1";
+const MOCK_KEY = "os-exam-trainer-mock";
+let S = { v: 1, ratings: {}, plan: {}, mocks: [] };
+function normalize(d) {
+  return { v: 1, ratings: (d && d.ratings) || {}, plan: (d && d.plan) || {}, mocks: Array.isArray(d && d.mocks) ? d.mocks : [] };
+}
+function hasContent(d) { return Object.keys(d.ratings).length || Object.keys(d.plan).length || d.mocks.length; }
+function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } }
+function lsSet(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+
+const store = {
+  ref: null, dirty: false, saving: false, again: false, timer: null,
+  status(s, text) { const el = $("#saveStatus"); el.dataset.s = s; $("#saveText").textContent = text; },
+  async init() {
+    const local = lsGet(LS_KEY);
+    if (local) S = normalize(local);
+    let db = null, user = null;
+    try {
+      if (window.claude && window.claude.use) [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    } catch {}
+    const uid = user ? await user.id() : null;
+    if (!db || !uid) { this.status("local", "Saved in this browser only"); return; }
+    this.ref = db.doc(`data/users/${uid}/progress`);
+    this.status("loading", "Loading progress…");
+    let settled = false;
+    const t = setTimeout(() => { if (!settled) this.status("local", "Can't reach your account yet; saving in this browser"); }, 10000);
+    this.ref.onSnapshot(snap => {
+      if (snap.metadata.fromCache && !settled) { if (snap.exists && !this.dirty && !this.saving) { S = normalize(snap.data()); renderAll(); } return; }
+      if (!settled) { settled = true; clearTimeout(t); }
+      if (this.dirty || this.saving) return;
+      if (snap.exists) { S = normalize(snap.data()); lsSet(LS_KEY, S); renderAll(); this.status("synced", "Progress saved to your account"); }
+      else if (hasContent(S)) { this.save(); }
+      else this.status("synced", "Progress saved to your account");
+    }, e => { settled = true; clearTimeout(t); this.ref = null; this.status("local", "Saved in this browser only"); });
+  },
+  save() {
+    lsSet(LS_KEY, S);
+    if (!this.ref) return;
+    this.dirty = true;
+    this.status("loading", "Saving…");
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.flush(), 800);
+  },
+  async flush() {
+    if (this.saving) { this.again = true; return; }
+    this.saving = true;
+    const snap = JSON.stringify(S);
+    try {
+      await this.ref.set(JSON.parse(snap));
+      if (JSON.stringify(S) === snap) this.dirty = false;
+      this.status("synced", "Progress saved to your account");
+    } catch (e) {
+      if (e && e.code === "invalid_argument") { this.ref = null; this.status("local", "Saved in this browser only"); }
+      else this.status("error", "Couldn't save to your account; kept in this browser");
+    }
+    this.saving = false;
+    if (this.again) { this.again = false; this.flush(); }
+  },
+};
+
+/* ===================== Claude grading ===================== */
+let sample = null;
+async function initSample() {
+  try { if (window.claude && window.claude.use) sample = await window.claude.use("sample"); } catch { sample = null; }
+  renderAll();
+}
+const SAMPLE_ERR = {
+  not_granted: "Claude grading is turned off for this page.",
+  sampling_disabled: "Claude isn't available for this account.",
+  rate_limited: "Too many requests right now. Wait a minute and try again.",
+  session_expired: "Sign in to claude.ai again, then retry.",
+  invalid_json: "Claude's reply couldn't be read. Try again.",
+  refused: "Claude declined to grade this answer.",
+};
+const HIDE_CODES = new Set(["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"]);
+function gradeRubric() {
+  return "You are grading short answers for a university Operating Systems exam (DTU course 02159). Each short question is worth 5 points: a correct answer with a correct brief explanation (2-3 lines) earns 5. Reward correct reasoning in the student's own words even if it differs from the model answer; there may be more than one right answer. A correct result with no or wrong explanation earns at most 2. Be fair and specific.";
+}
+function qBlock(q, answer) {
+  return `Question: ${q.text}\n${q.code ? "Code:\n" + q.code + "\n" : ""}Model answer: ${q.answer.replace(/\*\*/g, "")}\nStudent answer: ${answer.trim() || "(blank)"}`;
+}
+async function gradeOne(q, answer) {
+  const prompt = `${gradeRubric()}\n\n${qBlock(q, answer)}\n\nReply with only a JSON object: {"score": integer 0-5, "verdict": "correct" | "partly correct" | "incorrect", "good": "one sentence on what is right (or empty)", "missing": "one sentence on what is missing or wrong (or empty)", "tip": "one short sentence on how to write a full-marks answer"}`;
+  return sample.json(prompt, { modelTier: "default" });
+}
+async function gradeMany(items) {
+  const body = items.map((it, i) => `### Item ${i}\n${qBlock(it.q, it.answer)}`).join("\n\n");
+  const prompt = `${gradeRubric()}\n\nGrade each item below.\n\n${body}\n\nReply with only a JSON array, one object per item in order: [{"i": item number, "score": integer 0-5, "note": "one sentence: what was missing or wrong, or 'Full marks.'"}]`;
+  return sample.json(prompt, { modelTier: "default" });
+}
+
+/* ===================== Countdown & tabs ===================== */
+function renderCountdown() {
+  const d = daysLeft();
+  const label = d > 1 ? `${d} days` : d === 1 ? "1 day" : d === 0 ? "Exam today" : "Exam done";
+  $("#countdown").innerHTML = `<span class="days">${label}</span><span class="when">to Thu 10 Dec · 4 h · all aids, no internet</span>`;
+}
+let tab = "practice";
+function route() {
+  const h = location.hash.replace("#", "");
+  tab = ["practice", "mock", "progress", "plan", "notes"].includes(h) ? h : "practice";
+  document.querySelectorAll("nav.tabs a").forEach(a => a.dataset.tab === tab ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  document.querySelectorAll(".view").forEach(v => v.hidden = v.id !== `view-${tab}`);
+  renderTab();
+}
+function renderTab() {
+  ({ practice: renderPractice, mock: renderMock, progress: renderProgress, plan: renderPlan, notes: renderNotes })[tab]();
+}
+function renderAll() { renderCountdown(); renderTab(); }
+function goPractice(opts = {}) {
+  P.topics = new Set(opts.topics || []);
+  P.kinds = new Set(opts.kinds || []);
+  P.weakOnly = !!opts.weakOnly;
+  P.current = opts.qid ? QBYID[opts.qid] : null;
+  P.revealed = false; P.grade = null; P.draft = "";
+  if (location.hash !== "#practice") location.hash = "practice"; else renderPractice();
+}
+
+/* ===================== Practice ===================== */
+const P = { topics: new Set(), kinds: new Set(), weakOnly: false, current: null, revealed: false, grade: null, grading: false, draft: "", session: { done: 0, good: 0 } };
+function pool() {
+  return Q.filter(q => (!P.topics.size || P.topics.has(q.topic)) && (!P.kinds.size || P.kinds.has(q.kind)) && (!P.weakOnly || (S.ratings[q.id] && S.ratings[q.id].r < 2)));
+}
+function pickNext() {
+  const items = pool().filter(q => !P.current || q.id !== P.current.id || pool().length === 1);
+  if (!items.length) return null;
+  const now = Date.now();
+  const weights = items.map(q => {
+    const r = S.ratings[q.id];
+    if (!r) return 6;
+    const ageDays = (now - (r.t || 0)) / 864e5;
+    return [5, 3, 0.6][r.r] + Math.min(ageDays, 7) * 0.3;
+  });
+  let x = Math.random() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < items.length; i++) { x -= weights[i]; if (x <= 0) return items[i]; }
+  return items[items.length - 1];
+}
+function topicStats(tid) {
+  const qs = Q.filter(q => !tid || q.topic === tid);
+  let seen = 0, sum = 0;
+  for (const q of qs) { const r = S.ratings[q.id]; if (r) { seen++; sum += r.r / 2; } }
+  return { total: qs.length, seen, mastery: qs.length ? sum / qs.length : 0 };
+}
+function ratingTag(q) {
+  const r = S.ratings[q.id];
+  if (!r) return `<span class="tag">New</span>`;
+  return `<span class="tag r${r.r}">Last: ${["Missed", "Partly", "Nailed it"][r.r]}</span>`;
+}
+function renderPractice() {
+  const view = $("#view-practice");
+  if (!P.current || !pool().some(q => q.id === P.current.id)) { P.current = pickNext(); P.revealed = false; P.grade = null; P.draft = ""; }
+  const q = P.current;
+  const topicChips = TOPICS.map(t => {
+    const st = topicStats(t.id);
+    return `<button class="fchip" data-topic="${t.id}" aria-pressed="${P.topics.has(t.id)}"><span class="lbl">${esc(t.name)}<div class="mini-bar"><span style="width:${pct(st.mastery)}"></span></div></span><span class="n">${st.seen}/${st.total}</span></button>`;
+  }).join("");
+  const kindChips = Object.entries(KINDS).map(([k, label]) => {
+    const n = Q.filter(x => x.kind === k).length;
+    return `<button class="fchip" data-kind="${k}" aria-pressed="${P.kinds.has(k)}"><span class="lbl">${label}</span><span class="n">${n}</span></button>`;
+  }).join("");
+  const sess = P.session;
+  let card;
+  if (!q) {
+    card = `<div class="panel empty"><p><strong>No questions match these filters.</strong></p><p>${P.weakOnly ? "You have no missed or partly-right questions here yet. Nice." : "Clear a filter to see more questions."}</p><button class="btn" id="clearFilters">Clear filters</button></div>`;
+  } else {
+    const g = P.grade;
+    const sugg = g && typeof g.score === "number" ? (g.score >= 4 ? 2 : g.score >= 2 ? 1 : 0) : null;
+    card = `<article class="panel qcard" aria-live="polite">
+      <div class="qmeta"><span class="tag topic">${esc(TNAME[q.topic])}</span><span class="tag k-${q.kind}">${KINDS[q.kind]}</span>${ratingTag(q)}<span class="qid">${q.id}</span></div>
+      <h2 class="qtext">${inline(q.text)}</h2>
+      ${q.code ? `<pre class="code"><code style="background:none;padding:0;font-size:inherit">${hl(q.code)}</code></pre>` : ""}
+      <div><label class="lab" for="ans">Your answer: a brief answer plus a 2–3 line explanation, like in the exam</label>
+      <textarea id="ans" placeholder="Write it out before you look. Ctrl+Enter shows the model answer.">${esc(P.draft)}</textarea></div>
+      <div class="actions">
+        ${P.revealed ? "" : `<button class="btn primary" id="reveal">Show model answer</button>`}
+        ${sample ? `<button class="btn" id="grade" ${P.grading ? "disabled" : ""}>${P.grading ? "Grading…" : "Grade my answer with Claude"}</button>` : ""}
+        <button class="btn ghost" id="skip">Skip</button>
+      </div>
+      ${g ? (g.error ? `<div class="feedback">${esc(g.error)}</div>` : `<div class="feedback"><span class="score">${g.score}/5 · ${esc(g.verdict || "")}</span>${g.good ? `<span><strong>Right:</strong> ${esc(g.good)}</span>` : ""}${g.missing ? `<span><strong>Missing:</strong> ${esc(g.missing)}</span>` : ""}${g.tip ? `<span class="muted">${esc(g.tip)}</span>` : ""}</div>`) : ""}
+      ${P.revealed ? `<div class="model"><div class="eyebrow">Model answer</div>${fmt(q.answer)}</div>
+      <div class="rate"><span class="muted">How did you do?</span>
+        <button class="btn${sugg === 0 ? " suggested" : ""}" data-r="0">Missed</button>
+        <button class="btn${sugg === 1 ? " suggested" : ""}" data-r="1">Partly</button>
+        <button class="btn${sugg === 2 ? " suggested" : ""}" data-r="2">Nailed it</button>
+        ${sugg !== null ? `<span class="hint">Highlighted = Claude's suggestion</span>` : ""}
+      </div>` : ""}
+    </article>`;
+  }
+  view.innerHTML = `<div class="practice">
+    <aside class="filters">
+      <div><h3>Topics</h3><div class="chiplist">${topicChips}</div></div>
+      <div><h3>Question type</h3><div class="chiplist">${kindChips}</div></div>
+      <div><h3>Focus</h3><div class="chiplist"><button class="fchip" id="weakToggle" aria-pressed="${P.weakOnly}"><span class="lbl">Only missed / partly</span><span class="n">${Q.filter(x => S.ratings[x.id] && S.ratings[x.id].r < 2).length}</span></button></div></div>
+    </aside>
+    <div style="min-width:0">
+      <div class="session"><span>${pool().length} questions in this set</span><span>This session: ${sess.done} answered · ${sess.good} nailed</span><span>New questions come first, then the ones you missed</span></div>
+      ${card}
+    </div>
+  </div>`;
+  bindPractice();
+}
+function bindPractice() {
+  const view = $("#view-practice");
+  view.querySelectorAll("[data-topic]").forEach(b => b.onclick = () => { const t = b.dataset.topic; P.topics.has(t) ? P.topics.delete(t) : P.topics.add(t); P.current = null; renderPractice(); });
+  view.querySelectorAll("[data-kind]").forEach(b => b.onclick = () => { const k = b.dataset.kind; P.kinds.has(k) ? P.kinds.delete(k) : P.kinds.add(k); P.current = null; renderPractice(); });
+  const wt = $("#weakToggle"); if (wt) wt.onclick = () => { P.weakOnly = !P.weakOnly; P.current = null; renderPractice(); };
+  const cf = $("#clearFilters"); if (cf) cf.onclick = () => { P.topics.clear(); P.kinds.clear(); P.weakOnly = false; P.current = null; renderPractice(); };
+  const ans = $("#ans");
+  if (ans) {
+    ans.oninput = () => { P.draft = ans.value; };
+    ans.onkeydown = e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !P.revealed) { e.preventDefault(); P.revealed = true; renderPractice(); } };
+  }
+  const rv = $("#reveal"); if (rv) rv.onclick = () => { P.revealed = true; renderPractice(); };
+  const sk = $("#skip"); if (sk) sk.onclick = () => { P.current = pickNext(); P.revealed = false; P.grade = null; P.draft = ""; renderPractice(); };
+  const gr = $("#grade"); if (gr) gr.onclick = async () => {
+    if (!P.draft.trim()) { P.grade = { error: "Write an answer first, then ask Claude to grade it." }; renderPractice(); return; }
+    P.grading = true; P.grade = null; renderPractice();
+    const q = P.current;
+    try {
+      const res = await gradeOne(q, P.draft);
+      if (P.current === q) P.grade = { score: Math.max(0, Math.min(5, Math.round(Number(res.score) || 0))), verdict: res.verdict, good: res.good, missing: res.missing, tip: res.tip };
+      if (P.current === q) P.revealed = true;
+    } catch (e) {
+      if (e && HIDE_CODES.has(e.code)) sample = null;
+      if (P.current === q) P.grade = { error: SAMPLE_ERR[e && e.code] || "Grading didn't finish. Try again." };
+    }
+    P.grading = false; renderPractice();
+  };
+  view.querySelectorAll(".rate [data-r]").forEach(b => b.onclick = () => {
+    const r = Number(b.dataset.r), q = P.current;
+    const prev = S.ratings[q.id];
+    S.ratings[q.id] = { r, n: (prev ? prev.n : 0) + 1, t: Date.now() };
+    store.save();
+    P.session.done++; if (r === 2) P.session.good++;
+    P.current = pickNext(); P.revealed = false; P.grade = null; P.draft = "";
+    renderPractice();
+    window.scrollTo({ top: 0 });
+  });
+}
+
+/* ===================== Mock exam ===================== */
+let M = lsGet(MOCK_KEY); // {ids, start, dur, answers, phase:'run'|'review', scores, notes}
+let mockTick = null;
+function saveMock() { lsSet(MOCK_KEY, M); }
+function buildMock(n) {
+  const topics = shuffle(TOPICS.filter(t => t.id !== "osc").map(t => t.id));
+  const bags = Object.fromEntries(topics.map(t => [t, shuffle(Q.filter(q => q.topic === t))]));
+  const ids = [];
+  let i = 0;
+  while (ids.length < n) {
+    const t = topics[i % topics.length];
+    const q = bags[t].pop();
+    if (q) ids.push(q.id);
+    i++;
+    if (i > 500) break;
+  }
+  if (Math.random() < 0.6) { const osc = shuffle(Q.filter(q => q.topic === "osc"))[0]; ids[ids.length - 1] = osc.id; }
+  return shuffle(ids);
+}
+function fmtClock(ms) {
+  const neg = ms < 0; ms = Math.abs(ms);
+  const h = Math.floor(ms / 36e5), m = Math.floor(ms % 36e5 / 6e4), s = Math.floor(ms % 6e4 / 1e3);
+  return `${neg ? "−" : ""}${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+function renderMock() {
+  clearInterval(mockTick);
+  const view = $("#view-mock");
+  if (!M) {
+    const last = S.mocks[S.mocks.length - 1];
+    view.innerHTML = `<div class="panel mock-setup">
+      <div class="eyebrow">Mock exam</div>
+      <h2>Practise under exam conditions</h2>
+      <p class="muted" style="margin:0">You get a random mix across all topics, about 12 minutes per question like the real exam. Answer in a few lines, then mark yourself against the model answers${sample ? " or let Claude suggest the marks" : ""}. Your draft is kept in this browser if you close the page.</p>
+      <div class="choice-row">
+        <button class="choice" data-n="20"><strong>Full exam</strong><span>20 questions · 4 hours · 100 points</span></button>
+        <button class="choice" data-n="10"><strong>Half exam</strong><span>10 questions · 2 hours · 50 points</span></button>
+        <button class="choice" data-n="5"><strong>Quick round</strong><span>5 questions · 1 hour · 25 points</span></button>
+      </div>
+      ${last ? `<p class="hint" style="margin:0">Last result: ${last.score}/${last.max} (${pct(last.score / last.max)}) on ${new Date(last.d).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</p>` : ""}
+    </div>`;
+    view.querySelectorAll(".choice").forEach(b => b.onclick = () => {
+      const n = Number(b.dataset.n);
+      M = { ids: buildMock(n), start: Date.now(), dur: n * 12 * 6e4, answers: {}, phase: "run", scores: {}, notes: {} };
+      saveMock(); renderMock(); window.scrollTo({ top: 0 });
+    });
+    return;
+  }
+  if (M.phase === "run") {
+    const qs = M.ids.map(id => QBYID[id]).filter(Boolean);
+    view.innerHTML = `<div class="stack">
+      <div class="panel timerbar"><span class="eyebrow">Time left</span><span class="clock" id="clock"></span><span class="grow muted" id="answered"></span>
+        <button class="btn primary" id="submitMock">Hand in</button><button class="btn ghost" id="quitMock">Discard</button></div>
+      <div class="confirm" id="quitConfirm" hidden><span>Discard this mock exam and all answers?</span><button class="btn small" id="quitYes">Discard</button><button class="btn small ghost" id="quitNo">Keep going</button></div>
+      ${qs.map((q, i) => `<article class="panel mq">
+        <h3><span class="num">${i + 1}.</span>${inline(q.text)} <span class="muted" style="font-weight:400">(5 points)</span></h3>
+        ${q.code ? `<pre class="code"><code style="background:none;padding:0;font-size:inherit">${hl(q.code)}</code></pre>` : ""}
+        <textarea id="m-${q.id}" data-id="${q.id}" aria-label="Answer to question ${i + 1}">${esc(M.answers[q.id] || "")}</textarea>
+      </article>`).join("")}
+      <div class="actions"><button class="btn primary" id="submitMock2">Hand in and mark</button></div>
+    </div>`;
+    const tick = () => {
+      const left = M.start + M.dur - Date.now();
+      const c = $("#clock"); if (!c) return;
+      c.textContent = left >= 0 ? fmtClock(left) : `Time's up ${fmtClock(left)}`;
+      c.classList.toggle("late", left < 0);
+      $("#answered").textContent = `${Object.values(M.answers).filter(a => a && a.trim()).length}/${qs.length} answered`;
+    };
+    tick(); mockTick = setInterval(tick, 1000);
+    let saveT = null;
+    view.querySelectorAll("textarea[data-id]").forEach(t => t.oninput = () => { M.answers[t.dataset.id] = t.value; clearTimeout(saveT); saveT = setTimeout(saveMock, 500); tick(); });
+    const submit = () => { M.phase = "review"; saveMock(); renderMock(); window.scrollTo({ top: 0 }); };
+    $("#submitMock").onclick = submit; $("#submitMock2").onclick = submit;
+    $("#quitMock").onclick = () => { $("#quitConfirm").hidden = false; };
+    $("#quitNo").onclick = () => { $("#quitConfirm").hidden = true; };
+    $("#quitYes").onclick = () => { M = null; saveMock(); renderMock(); };
+    return;
+  }
+  // review
+  const qs = M.ids.map(id => QBYID[id]).filter(Boolean);
+  const max = qs.length * 5;
+  const scored = qs.filter(q => typeof M.scores[q.id] === "number").length;
+  const total = qs.reduce((a, q) => a + (M.scores[q.id] || 0), 0);
+  view.innerHTML = `<div class="stack">
+    <div class="panel timerbar"><span class="eyebrow">Score</span><span class="total">${total}<span class="muted" style="font-size:1rem">/${max}</span></span>
+      <span class="grow muted">${scored}/${qs.length} marked. Give each answer 0–5 using the model answer.</span>
+      ${sample ? `<button class="btn" id="gradeAll" ${M.grading ? "disabled" : ""}>${M.grading ? "Claude is marking…" : "Suggest marks with Claude"}</button>` : ""}
+      <button class="btn primary" id="saveMock">Save result</button></div>
+    ${M.gradeError ? `<div class="feedback">${esc(M.gradeError)}</div>` : ""}
+    ${scored < qs.length ? `<p class="hint" style="margin:0">Unmarked questions count as 0 when you save.</p>` : ""}
+    ${qs.map((q, i) => {
+      const a = (M.answers[q.id] || "").trim();
+      const s = M.scores[q.id], sg = M.sugg && M.sugg[q.id];
+      return `<article class="panel mq">
+        <div class="qmeta"><span class="tag topic">${esc(TNAME[q.topic])}</span><span class="tag k-${q.kind}">${KINDS[q.kind]}</span><span class="qid">${q.id}</span></div>
+        <h3><span class="num">${i + 1}.</span>${inline(q.text)}</h3>
+        ${q.code ? `<pre class="code"><code style="background:none;padding:0;font-size:inherit">${hl(q.code)}</code></pre>` : ""}
+        <div><div class="eyebrow" style="margin-bottom:4px">Your answer</div><div class="youans${a ? "" : " blank"}">${a ? esc(a) : "No answer"}</div></div>
+        <div class="model"><div class="eyebrow">Model answer</div>${fmt(q.answer)}</div>
+        ${M.notes && M.notes[q.id] ? `<div class="feedback"><span><strong>Claude:</strong> ${esc(M.notes[q.id])}</span></div>` : ""}
+        <div class="scorepick"><span class="muted" style="margin-right:6px">Points</span>${[0, 1, 2, 3, 4, 5].map(v => `<button data-q="${q.id}" data-v="${v}" aria-pressed="${s === v}" class="${sg === v ? "sugg" : ""}">${v}</button>`).join("")}</div>
+      </article>`;
+    }).join("")}
+  </div>`;
+  view.querySelectorAll(".scorepick button").forEach(b => b.onclick = () => { M.scores[b.dataset.q] = Number(b.dataset.v); saveMock(); renderMock(); });
+  const ga = $("#gradeAll");
+  if (ga) ga.onclick = async () => {
+    M.grading = true; M.gradeError = null; renderMock();
+    try {
+      const res = await gradeMany(qs.map(q => ({ q, answer: M.answers[q.id] || "" })));
+      M.sugg = {}; M.notes = M.notes || {};
+      for (const r of Array.isArray(res) ? res : []) {
+        const q = qs[Number(r.i)]; if (!q) continue;
+        const v = Math.max(0, Math.min(5, Math.round(Number(r.score) || 0)));
+        M.sugg[q.id] = v; M.notes[q.id] = String(r.note || "");
+        if (typeof M.scores[q.id] !== "number") M.scores[q.id] = v;
+      }
+    } catch (e) {
+      if (e && HIDE_CODES.has(e.code)) sample = null;
+      M.gradeError = SAMPLE_ERR[e && e.code] || "Marking didn't finish. Try again, or mark the answers yourself.";
+    }
+    M.grading = false; saveMock(); renderMock();
+  };
+  $("#saveMock").onclick = () => {
+    const topics = {};
+    for (const q of qs) {
+      const v = M.scores[q.id] || 0;
+      topics[q.topic] = topics[q.topic] || [0, 0];
+      topics[q.topic][0] += v; topics[q.topic][1] += 5;
+      const prev = S.ratings[q.id];
+      S.ratings[q.id] = { r: v >= 4 ? 2 : v >= 2 ? 1 : 0, n: (prev ? prev.n : 0) + 1, t: Date.now() };
+    }
+    S.mocks.push({ d: Date.now(), n: qs.length, score: total, max, topics });
+    store.save();
+    M = null; saveMock();
+    location.hash = "progress";
+  };
+}
+
+/* ===================== Progress ===================== */
+let confirmReset = false;
+function renderProgress() {
+  const view = $("#view-progress");
+  const all = topicStats();
+  const mocks = S.mocks;
+  const last = mocks[mocks.length - 1];
+  const best = mocks.reduce((b, m) => Math.max(b, m.score / m.max), 0);
+  const rows = TOPICS.map(t => ({ t, ...topicStats(t.id) }));
+  const ranked = [...rows].filter(r => r.t.id !== "osc").sort((a, b) => a.mastery - b.mastery);
+  const weak = Q.filter(q => S.ratings[q.id] && S.ratings[q.id].r === 0);
+  const planTotal = PLAN.reduce((a, w) => a + w.days.reduce((b, d) => b + d[2].length, 0), 0);
+  const planDone = Object.values(S.plan).filter(Boolean).length;
+  view.innerHTML = `<div class="stack">
+    <div><h1 class="page-title">Progress</h1><p class="lede">Mastery counts Nailed it as 1, Partly as ½ and Missed or unseen as 0, averaged over every question in the topic.</p></div>
+    <div class="stats">
+      <div class="panel stat"><div class="v">${pct(all.mastery)}</div><div class="l">Overall mastery</div></div>
+      <div class="panel stat"><div class="v">${all.seen}<span class="muted" style="font-size:1rem">/${all.total}</span></div><div class="l">Questions attempted</div></div>
+      <div class="panel stat"><div class="v">${last ? pct(last.score / last.max) : "–"}</div><div class="l">${last ? `Last mock · best ${pct(best)}` : "No mock exam yet"}</div></div>
+      <div class="panel stat"><div class="v">${planDone}<span class="muted" style="font-size:1rem">/${planTotal}</span></div><div class="l">Study plan tasks done</div></div>
+    </div>
+    <div class="panel">
+      <div class="section-head"><h2>By topic</h2><span class="hint">Weakest first: ${ranked.slice(0, 2).map(r => esc(r.t.name)).join(", ")}</span></div>
+      <div class="scroll-x"><table class="ttable">
+        <thead><tr><th>Topic</th><th>Attempted</th><th style="width:40%">Mastery</th><th></th></tr></thead>
+        <tbody>${rows.map(r => `<tr><td>${esc(r.t.name)}</td><td class="num">${r.seen}/${r.total}</td>
+          <td><div style="display:flex;gap:10px;align-items:center"><div class="bar" style="flex:1"><span style="width:${pct(r.mastery)};background:${barColor(r.mastery)}"></span></div><span class="num">${pct(r.mastery)}</span></div></td>
+          <td><button class="btn small" data-practice="${r.t.id}">Practice</button></td></tr>`).join("")}</tbody>
+      </table></div>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <div class="section-head"><h2>Mock exams</h2><button class="btn small" id="newMock">Start one</button></div>
+        <div class="pad">${mocks.length ? `<div class="mock-hist">${mocks.slice(-10).map(m => `<div class="col"><b>${Math.round(m.score / m.max * 100)}</b><i style="height:${Math.max(4, m.score / m.max * 100)}%"></i></div>`).join("")}</div>
+          <div class="hist-labels">${mocks.slice(-10).map(m => `<span>${new Date(m.d).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</span>`).join("")}</div>
+          <p class="hint">Percent of available points, last 10 attempts.</p>` : `<p class="muted">No results yet. A full mock exam takes 4 hours; try a 5-question quick round first.</p>`}</div>
+      </div>
+      <div class="panel">
+        <div class="section-head"><h2>Missed questions</h2>${weak.length ? `<button class="btn small" id="drillWeak">Drill these</button>` : ""}</div>
+        <div class="pad">${weak.length ? `<ul class="weak-list">${weak.slice(0, 12).map(q => `<li><button data-qid="${q.id}"><span class="qid">${q.id}</span><span>${inline(q.text.length > 90 ? q.text.slice(0, 88) + "…" : q.text)}</span></button></li>`).join("")}</ul>${weak.length > 12 ? `<p class="hint">and ${weak.length - 12} more</p>` : ""}` : `<p class="muted">Questions you mark as Missed show up here.</p>`}</div>
+      </div>
+    </div>
+    <div class="confirm">${confirmReset ? `<span>Erase all ratings, plan ticks and mock results? This can't be undone.</span><button class="btn small" id="resetYes">Erase progress</button><button class="btn small ghost" id="resetNo">Cancel</button>` : `<button class="btn small ghost" id="reset">Reset progress</button>`}</div>
+  </div>`;
+  view.querySelectorAll("[data-practice]").forEach(b => b.onclick = () => goPractice({ topics: [b.dataset.practice] }));
+  view.querySelectorAll("[data-qid]").forEach(b => b.onclick = () => goPractice({ qid: b.dataset.qid }));
+  const dw = $("#drillWeak"); if (dw) dw.onclick = () => goPractice({ weakOnly: true });
+  $("#newMock").onclick = () => { location.hash = "mock"; };
+  const r = $("#reset"); if (r) r.onclick = () => { confirmReset = true; renderProgress(); };
+  const rn = $("#resetNo"); if (rn) rn.onclick = () => { confirmReset = false; renderProgress(); };
+  const ry = $("#resetYes"); if (ry) ry.onclick = () => { confirmReset = false; S = normalize({}); store.save(); renderProgress(); };
+}
+
+/* ===================== Plan ===================== */
+function renderPlan() {
+  const view = $("#view-plan");
+  const today = todayISO();
+  view.innerHTML = `<div class="stack">
+    <div><h1 class="page-title">Study plan</h1><p class="lede">About 1.5–2 hours a day until the exam on 10 December. Tick tasks as you go; today is highlighted. Tasks that point to a topic open the matching practice set.</p></div>
+    ${PLAN.map((w, wi) => `<div class="panel week"><h2>${esc(w.week)}</h2>
+      ${w.days.map(([date, title, items, link]) => {
+        const d = new Date(date + "T12:00:00");
+        const label = d.toLocaleDateString("en-GB", { weekday: "short" });
+        const num = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+        return `<div class="day${date === today ? " today" : ""}" ${date === today ? 'id="today"' : ""}>
+          <div class="date"><b>${num}</b>${label}${date === today ? " · today" : ""}</div>
+          <div><h4>${esc(title)}</h4>
+            ${items.map((it, i) => { const key = `${date}:${i}`; const done = !!S.plan[key]; return `<label class="check${done ? " done" : ""}"><input type="checkbox" id="plan-${key.replace(":", "-")}" data-key="${key}" ${done ? "checked" : ""}><span>${inline(it)}</span></label>`; }).join("")}
+            ${link ? `<button class="btn small go" data-link="${link}">${link === "mock" ? "Open mock exam" : link === "bug" ? "Practice Find & fix" : link === "weak" ? "Practice missed questions" : "Practice " + esc(TNAME[link])}</button>` : ""}
+          </div></div>`;
+      }).join("")}
+    </div>`).join("")}
+    <div class="panel week"><div class="day today"><div class="date"><b>10 Dec</b>Thu</div><div><h4>Exam day</h4><span class="muted">4 hours on campus in the Digital Exam system. All offline aids are allowed (slides, book, your notes, man pages, the terminal); no internet and no AI assistants.</span></div></div></div>
+  </div>`;
+  view.querySelectorAll("input[data-key]").forEach(c => c.onchange = () => { if (c.checked) S.plan[c.dataset.key] = 1; else delete S.plan[c.dataset.key]; store.save(); c.closest(".check").classList.toggle("done", c.checked); });
+  view.querySelectorAll("[data-link]").forEach(b => b.onclick = () => {
+    const l = b.dataset.link;
+    if (l === "mock") location.hash = "mock";
+    else if (l === "bug") goPractice({ kinds: ["bug"] });
+    else if (l === "weak") goPractice({ weakOnly: true });
+    else goPractice({ topics: [l] });
+  });
+}
+
+/* ===================== Notes ===================== */
+function renderNotes() {
+  $("#view-notes").innerHTML = `<div class="stack">
+    <div><h1 class="page-title">Key points</h1><p class="lede">One card per topic: the facts most short questions hinge on. Use them as a starting point for your own one-page notes, which you're allowed to bring.</p></div>
+    <div class="notes">${TOPICS.map(t => `<div class="panel note"><h2>${esc(t.name)} <button class="btn small" data-practice="${t.id}">Practice</button></h2><ul>${NOTES[t.id].map(n => `<li>${inline(n)}</li>`).join("")}</ul></div>`).join("")}
+      <div class="panel note"><h2>How answers are marked</h2><ul>
+        <li>Each short question: a brief answer plus a <strong>2–3 line explanation</strong>. A right answer without the why loses points.</li>
+        <li>Write in your own words; don't paste from the slides or book.</li>
+        <li>Critical-thinking questions can have several right answers: state assumptions and motivate your choice.</li>
+        <li>Coding questions: C is encouraged but pseudocode is accepted; syntax isn't graded.</li>
+        <li>About 12 minutes per question. If you're stuck, move on and come back.</li>
+      </ul></div>
+    </div>
+  </div>`;
+  document.querySelectorAll("#view-notes [data-practice]").forEach(b => b.onclick = () => goPractice({ topics: [b.dataset.practice] }));
+}
+
+/* ===================== Boot ===================== */
+window.addEventListener("hashchange", route);
+route();
+renderCountdown();
+store.init().then(renderAll);
+initSample();
+if (M && M.phase === "run" && !location.hash) location.hash = "mock";
+</script>
+
+</body>
+</html>
